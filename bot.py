@@ -62,10 +62,10 @@ def index():
     return "Брат тут. Webhook OK."
 
 @app.post(WEBHOOK_PATH)
-async def telegram_webhook():
+def telegram_webhook():
     data = request.get_json(force=True)
     update = Update.de_json(data, telegram_app.bot)
-    await telegram_app.process_update(update)
+    asyncio.run(telegram_app.process_update(update))
     return "ok"
 
 async def setup():
