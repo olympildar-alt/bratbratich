@@ -1,13 +1,18 @@
 import os
 import requests
+from flask import Flask, request
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
-from flask import Flask
+from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 YC_FOLDER_ID = os.environ["YC_FOLDER_ID"]
 YC_ACCESS_KEY_ID = os.environ["YC_ACCESS_KEY_ID"]
 YC_SECRET_ACCESS_KEY = os.environ["YC_SECRET_ACCESS_KEY"]
+WEBHOOK_PATH = f"/webhook/{TELEGRAM_BOT_TOKEN}"
+WEBHOOK_URL = f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}{WEBHOOK_PATH}"
+
+app = Flask(__name__)
+telegram_app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
 def get_iam_token():
     url = "https://sts.api.cloud.yandex.net/iam/v1/tokens"
@@ -35,7 +40,7 @@ def get_sarcastic_reply(user_message):
                 "maxTokens": 200
             },
             "messages": [
-                {"role": "system", "text": "Ты отвечаешь саркастично, язвительно и с приколом на тему сломанных велосипедов."},
+                {"role": "system", "text": "Ты отвечаешь саркастично, язвительно и с приколом на тему сломанных велосипедов и дорогих ремонтов у Раиля а так же на тему пешей ставки 169 рублей."},
                 {"role": "user", "text": user_message}
             ]
         }
@@ -51,19 +56,19 @@ async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_text = get_sarcastic_reply(user_text)
     await update.message.reply_text(reply_text)
 
-def start_bot():
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
-    app.run_polling()
-
-# Flask-заглушка для Render
-flask_app = Flask(__name__)
-
-@flask_app.route('/')
+@app.route("/")
 def index():
-    return "Брат живой. Render OK."
+    return "Брат тут. Webhook OK."
+
+@app.post(WEBHOOK_PATH)
+async def telegram_webhook():
+    data = request.get_json(force=True)
+    update = Update.de_json(data, telegram_app.bot)
+    await telegram_app.process_update(update)
+    return "ok"
 
 if __name__ == "__main__":
-    import multiprocessing
-    multiprocessing.Process(target=start_bot).start()
-    flask_app.run(host="0.0.0.0", port=10000)
+    telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
+    telegram_app.initialize()
+    telegram_app.bot.set_webhook(WEBHOOK_URL)
+    app.run(host="0.0.0.0", port=10000)
