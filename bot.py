@@ -35,7 +35,7 @@ def get_sarcastic_reply(user_message):
                 "maxTokens": 200
             },
             "messages": [
-                {"role": "system", "text": "Ты отвечаешь саркастично, язвительно и с приколом."},
+                {"role": "system", "text": "Ты отвечаешь саркастично, язвительно и с приколом на тему сломанных велосипедов."},
                 {"role": "user", "text": user_message}
             ]
         }
@@ -61,9 +61,9 @@ flask_app = Flask(__name__)
 
 @flask_app.route('/')
 def index():
-    return "Бот работает!"
+    return "Брат живой. Render OK."
 
 if __name__ == "__main__":
-    import threading
-    threading.Thread(target=start_bot).start()
+    import multiprocessing
+    multiprocessing.Process(target=start_bot).start()
     flask_app.run(host="0.0.0.0", port=10000)
