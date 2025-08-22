@@ -3,6 +3,7 @@ import requests
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
+import asyncio
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 YC_FOLDER_ID = os.environ["YC_FOLDER_ID"]
@@ -40,7 +41,7 @@ def get_sarcastic_reply(user_message):
                 "maxTokens": 200
             },
             "messages": [
-                {"role": "system", "text": "Ты отвечаешь саркастично, язвительно и с приколом на тему сломанных велосипедов и дорогих ремонтов у Раиля а так же на тему пешей ставки 169 рублей."},
+                {"role": "system", "text": "Ты отвечаешь саркастично, язвительно и с приколом на тему дорогих ремонтов велосипедов у Раиля и пешей ставки 169 рублей."},
                 {"role": "user", "text": user_message}
             ]
         }
@@ -67,8 +68,12 @@ async def telegram_webhook():
     await telegram_app.process_update(update)
     return "ok"
 
-if __name__ == "__main__":
+async def setup():
     telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
-    telegram_app.initialize()
-    telegram_app.bot.set_webhook(WEBHOOK_URL)
+    await telegram_app.initialize()
+    await telegram_app.bot.set_webhook(WEBHOOK_URL)
+    print("Webhook установлен успешно")
+
+if __name__ == "__main__":
+    asyncio.run(setup())
     app.run(host="0.0.0.0", port=10000)
