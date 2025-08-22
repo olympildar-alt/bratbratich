@@ -41,12 +41,11 @@ def get_sarcastic_reply(user_message):
                 "maxTokens": 200
             },
             "messages": [
-                {"role": "system", "text": "Ты отвечаешь саркастично, язвительно и с приколом на тему дорогих ремонтов велосипедов у Раиля и пешей ставки 169 рублей."},
+                {"role": "system", "text": "Ты отвечаешь саркастично и язвительно и с приколом на тему дорогих ремонтов велосипедов у Раиля и пешей ставки 169 рублей."},
                 {"role": "user", "text": user_message}
             ]
         }
         response = requests.post(url, headers=headers, json=body)
-        response.raise_for_status()
         result = response.json()
         return result["result"]["alternatives"][0]["message"]["text"]
     except Exception as e:
@@ -65,15 +64,16 @@ def index():
 def telegram_webhook():
     data = request.get_json(force=True)
     update = Update.de_json(data, telegram_app.bot)
+
     asyncio.run(telegram_app.process_update(update))
     return "ok"
 
-async def setup():
-    telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
-    await telegram_app.initialize()
-    await telegram_app.bot.set_webhook(WEBHOOK_URL)
-    print("Webhook установлен успешно")
-
 if __name__ == "__main__":
-    asyncio.run(setup())
+    telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
+
+    async def start():
+        await telegram_app.initialize()
+        await telegram_app.bot.set_webhook(WEBHOOK_URL)
+
+    asyncio.run(start())
     app.run(host="0.0.0.0", port=10000)
